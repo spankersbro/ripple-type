@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ripple Type — David Irving</title>
+<meta name="description" content="Type anything and watch it ripple outward in ink and dust, WebGL, inspired by the Pluribus title card.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ripple Type — David Irving">
+<meta property="og:description" content="Type anything and watch it ripple outward in ink and dust, WebGL, inspired by the Pluribus title card.">
+<meta property="og:url" content="https://spankersbro.github.io/ripple-type/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ripple Type — David Irving">
+<meta name="twitter:description" content="Type anything and watch it ripple outward in ink and dust, WebGL, inspired by the Pluribus title card.">
+<style>
+  :root{
+    --bg:#050505;
+    --panel:rgba(12,12,12,.78);
+    --line:#262626;
+    --ink:#f2f2f2;
+    --muted:#7d7d7d;
+    --accent:#ffffff;
+  }
+  html,body{height:100%;overflow:hidden;background:var(--bg);margin:0;}
+  *{box-sizing:border-box;}
+
+  .app{
+    position:fixed;inset:0;
+    display:flex;flex-direction:column;
+    background:var(--bg);
+    font-family:'Sora',system-ui,sans-serif;
+  }
+
+  .chrome-top{
+    flex:0 0 auto;
+    padding:calc(env(safe-area-inset-top,0px) + 18px) 20px 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11px;letter-spacing:.16em;
+    color:var(--muted);text-transform:uppercase;
+  }
+  .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 8px 1px rgba(255,255,255,.5);
+    animation:breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{opacity:.35;transform:scale(.8);}
+    50%{opacity:1;transform:scale(1.15);}
+  }
+
+  .stage-wrap{
+    flex:1 1 auto;position:relative;min-height:0;
+    touch-action:none;cursor:crosshair;
+  }
+  canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .stage-hint{
+    position:absolute;left:0;right:0;bottom:12px;
+    text-align:center;pointer-events:none;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11px;letter-spacing:.08em;
+    color:var(--muted);opacity:.75;
+  }
+  .replay-btn{
+    position:absolute;left:14px;bottom:14px;
+    width:34px;height:34px;border-radius:50%;
+    border:1px solid var(--line);background:var(--panel);
+    color:var(--muted);font-size:15px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;backdrop-filter:blur(6px);
+    transition:color .15s ease,border-color .15s ease,transform .15s ease;
+  }
+  .replay-btn:hover{color:var(--ink);border-color:var(--muted);}
+  .replay-btn:active{transform:scale(.92);}
+  .fallback{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:24px;text-align:center;color:var(--muted);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+  }
+
+  .chrome-bottom{
+    flex:0 0 auto;
+    padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 18px);
+    border-top:1px solid var(--line);
+    background:var(--panel);
+    backdrop-filter:blur(10px);
+    display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field-label{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;
+  }
+  #textInput{
+    background:transparent;border:none;border-bottom:1px solid var(--line);
+    color:var(--ink);font-family:'Sora',sans-serif;font-weight:600;
+    font-size:16px;padding:4px 2px;min-width:180px;width:clamp(160px,32vw,320px);
+    outline:none;transition:border-color .15s ease;
+  }
+  #textInput:focus{border-bottom-color:var(--accent);}
+  .field-slider{min-width:140px;flex:0 1 160px;}
+  #intensity{
+    width:100%;accent-color:var(--accent);
+    background:transparent;
+  }
+  .hint{
+    margin-left:auto;align-self:center;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11px;color:var(--muted);opacity:.7;
+  }
+
+  @media (max-width:480px){
+    .chrome-bottom{gap:14px;}
+    .hint{display:none;}
+    #textInput{width:100%;}
+  }
+</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app">
+  <div class="chrome-top">
+    <span class="dot"></span>
+    <span class="eyebrow">Ripple Type</span>
+  </div>
+
+  <div class="stage-wrap" id="stageWrap">
+    <canvas id="gl"></canvas>
+    <button class="replay-btn" id="replayBtn" aria-label="Launch a ripple" title="Launch a ripple">↻</button>
+    <div class="stage-hint">tap the stage to ripple</div>
+  </div>
+
+  <div class="chrome-bottom">
+    <label class="field">
+      <span class="field-label">Text</span>
+      <input id="textInput" type="text" maxlength="28" value="PLURIBUS" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="field field-slider">
+      <span class="field-label">Intensity</span>
+      <input id="intensity" type="range" min="0.3" max="2" step="0.05" value="1">
+    </label>
+    <span class="hint">click anywhere to launch a new ripple</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var canvas = document.getElementById('gl');
+  var stageWrap = document.getElementById('stageWrap');
+  var textInput = document.getElementById('textInput');
+  var intensitySlider = document.getElementById('intensity');
+  var replayBtn = document.getElementById('replayBtn');
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if(!gl){
+    var fb = document.createElement('div');
+    fb.className = 'fallback';
+    fb.textContent = 'WebGL is not available in this browser.';
+    stageWrap.appendChild(fb);
+    return;
+  }
+
+  var VERT = [
+    'attribute vec2 aPosition;',
+    'varying vec2 vUV;',
+    'void main(){',
+    '  vUV = aPosition * 0.5 + 0.5;',
+    '  gl_Position = vec4(aPosition, 0.0, 1.0);',
+    '}'
+  ].join('\n');
+
+  var FRAG = [
+    'precision mediump float;',
+    'varying vec2 vUV;',
+    'uniform sampler2D uTexture;',
+    'uniform vec2 uResolution;',
+    'uniform float uTime;',
+    'uniform vec2 uRippleOrigin[6];',
+    'uniform float uRippleStart[6];',
+    'uniform float uAmplitude;',
+    '',
+    'float hash21(vec2 p){',
+    '  p = fract(p * vec2(123.34, 456.21));',
+    '  p += dot(p, p + 45.32);',
+    '  return fract(p.x * p.y);',
+    '}',
+    '',
+    'void main(){',
+    '  vec2 uv = vUV;',
+    '  vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);',
+    '  vec2 disp = vec2(0.0);',
+    '  float field = 0.0;',
+    '',
+    '  vec2 adiff = (uv - vec2(0.5)) * aspect;',
+    '  float adist = length(adiff);',
+    '  vec2 adir = adiff / max(adist, 0.0001);',
+    '  float awave = sin(adist * 20.0 - uTime * 1.1);',
+    '  float afall = exp(-adist * 1.3);',
+    '  disp += adir * awave * afall * 0.012;',
+    '  field += awave * afall;',
+    '',
+    '  for(int i = 0; i < 6; i++){',
+    '    float age = uTime - uRippleStart[i];',
+    '    if(age < 0.0 || age > 3.4) continue;',
+    '    vec2 diff = (uv - uRippleOrigin[i]) * aspect;',
+    '    float dist = length(diff);',
+    '    vec2 dir = diff / max(dist, 0.0001);',
+    '    float envelope = smoothstep(0.0, 0.12, age) * exp(-age * 1.05);',
+    '    float wave = sin(dist * 24.0 - age * 9.0);',
+    '    float falloff = exp(-dist * 2.2);',
+    '    float amt = wave * envelope * falloff * uAmplitude;',
+    '    disp += dir * amt;',
+    '    field += wave * envelope * falloff;',
+    '  }',
+    '',
+    '  vec2 dispUV = disp / aspect;',
+    '  float mask = texture2D(uTexture, uv - dispUV).a;',
+    '',
+    '  float lineFreq = 210.0;',
+    '  float warp = dispUV.y * 1.6 + 0.01 * sin(uv.x * 50.0 + uTime * 0.35);',
+    '  float phase = fract((uv.y + warp) * lineFreq);',
+    '  float tri = abs(phase - 0.5) * 2.0;',
+    '  float lineVal = 1.0 - smoothstep(0.42, 0.52, tri);',
+    '',
+    '  vec2 px = gl_FragCoord.xy;',
+    '  float spacing = 6.0;',
+    '  vec2 cell = floor(px / spacing);',
+    '  float rnd = hash21(cell);',
+    '  vec2 within = fract(px / spacing) - 0.5;',
+    '  float density = 0.16 + 0.22 * clamp(field, -1.0, 1.0);',
+    '  float visible = step(1.0 - density, rnd);',
+    '  float dotR = mix(0.16, 0.30, hash21(cell + 11.0));',
+    '  float dotShape = (1.0 - smoothstep(dotR, dotR + 0.18, length(within))) * visible;',
+    '',
+    '  float textEnergy = lineVal * mask;',
+    '  float bgEnergy = dotShape * (1.0 - mask);',
+    '  float v = max(textEnergy, bgEnergy);',
+    '',
+    '  gl_FragColor = vec4(vec3(v), 1.0);',
+    '}'
+  ].join('\n');
+
+  function compile(type, src){
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      console.error(gl.getShaderInfoLog(s));
+    }
+    return s;
+  }
+
+  var program = gl.createProgram();
+  gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(program);
+  gl.useProgram(program);
+
+  var quad = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+  var aPosition = gl.getAttribLocation(program, 'aPosition');
+  gl.enableVertexAttribArray(aPosition);
+  gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+  var uTexture = gl.getUniformLocation(program, 'uTexture');
+  var uResolution = gl.getUniformLocation(program, 'uResolution');
+  var uTime = gl.getUniformLocation(program, 'uTime');
+  var uRippleOrigin = gl.getUniformLocation(program, 'uRippleOrigin[0]');
+  var uRippleStart = gl.getUniformLocation(program, 'uRippleStart[0]');
+  var uAmplitude = gl.getUniformLocation(program, 'uAmplitude');
+
+  var texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  var textCanvas = document.createElement('canvas');
+  var textCtx = textCanvas.getContext('2d');
+  var currentText = textInput.value || 'PLURIBUS';
+
+  function drawTextTexture(text){
+    var w = textCanvas.width, h = textCanvas.height;
+    textCtx.clearRect(0, 0, w, h);
+    var fontSize = h * 0.32;
+    var minSize = 16 * (window.devicePixelRatio || 1);
+    textCtx.textAlign = 'center';
+    textCtx.textBaseline = 'middle';
+    while(fontSize > minSize){
+      textCtx.font = '800 ' + fontSize + 'px Sora, sans-serif';
+      if(textCtx.measureText(text).width <= w * 0.88) break;
+      fontSize -= 4;
+    }
+    textCtx.font = '800 ' + fontSize + 'px Sora, sans-serif';
+    textCtx.fillStyle = '#ffffff';
+    textCtx.fillText(text, w / 2, h / 2);
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textCanvas);
+  }
+
+  var MAX_RIPPLES = 6;
+  var rippleOrigins = new Float32Array(MAX_RIPPLES * 2);
+  var rippleStarts = new Float32Array(MAX_RIPPLES).fill(-9999);
+  var ripplePtr = 0;
+  var startTime = performance.now();
+
+  function now(){ return (performance.now() - startTime) / 1000; }
+
+  function fireRipple(x, y){
+    rippleOrigins[ripplePtr * 2] = x;
+    rippleOrigins[ripplePtr * 2 + 1] = y;
+    rippleStarts[ripplePtr] = now();
+    ripplePtr = (ripplePtr + 1) % MAX_RIPPLES;
+    lastInteraction = now();
+  }
+
+  function resize(){
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = stageWrap.clientWidth, h = stageWrap.clientHeight;
+    canvas.width = Math.max(1, Math.round(w * dpr));
+    canvas.height = Math.max(1, Math.round(h * dpr));
+    textCanvas.width = canvas.width;
+    textCanvas.height = canvas.height;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    drawTextTexture(currentText);
+  }
+
+  var lastInteraction = 0;
+  window.addEventListener('resize', resize);
+  resize();
+  fireRipple(0.5, 0.5);
+
+  var inputTimer = null;
+  textInput.addEventListener('input', function(){
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(function(){
+      var val = textInput.value.trim();
+      currentText = val === '' ? currentText : val;
+      drawTextTexture(currentText);
+      fireRipple(0.5, 0.5);
+    }, 220);
+  });
+
+  function pointerToUV(clientX, clientY){
+    var rect = canvas.getBoundingClientRect();
+    var x = (clientX - rect.left) / rect.width;
+    var y = 1.0 - (clientY - rect.top) / rect.height;
+    return [x, y];
+  }
+
+  stageWrap.addEventListener('pointerdown', function(e){
+    if(e.target === replayBtn) return;
+    var uv = pointerToUV(e.clientX, e.clientY);
+    fireRipple(uv[0], uv[1]);
+  });
+
+  replayBtn.addEventListener('click', function(){
+    fireRipple(0.5, 0.5);
+  });
+
+  if(!reducedMotion){
+    setInterval(function(){
+      if(now() - lastInteraction > 3.5){
+        fireRipple(0.5 + (Math.random() - 0.5) * 0.3, 0.5 + (Math.random() - 0.5) * 0.2);
+      }
+    }, 4200);
+  }
+
+  function frame(){
+    var t = now();
+    gl.uniform1f(uTime, t);
+    gl.uniform2f(uResolution, canvas.width, canvas.height);
+    gl.uniform2fv(uRippleOrigin, rippleOrigins);
+    gl.uniform1fv(uRippleStart, rippleStarts);
+    gl.uniform1f(uAmplitude, parseFloat(intensitySlider.value) * 0.05);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform1i(uTexture, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
