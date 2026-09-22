@@ -19,7 +19,10 @@ Live: https://davidirving.dev/ripple-type/
 - Outside the mask, a per-cell hashed dot field renders at a density driven by the same scalar
   wave value used for the displacement — no separate ring-drawing pass, the rings are the wave.
 
-No build step, no dependencies. It's a single `index.html`.
+No build step, no dependencies. It's a single `index.html`. Chrome (wordmark, labels,
+accent color) follows the same design tokens as the rest of `davidirving.dev` — plain
+system font stack, no decorative monospace, the shared GitHub-diff green as the accent.
+The effect itself stays pure black-and-white, since that's the actual point of the piece.
 
 ## Run it locally
 

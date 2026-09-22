@@ -18,8 +18,9 @@
     --panel:rgba(12,12,12,.78);
     --line:#262626;
     --ink:#f2f2f2;
-    --muted:#7d7d7d;
-    --accent:#ffffff;
+    --muted:#8a8a8a;
+    --accent:#3fb950;
+    --accent-ink:#0d1117;
   }
   html,body{height:100%;overflow:hidden;background:var(--bg);margin:0;}
   *{box-sizing:border-box;}
@@ -28,23 +29,27 @@
     position:fixed;inset:0;
     display:flex;flex-direction:column;
     background:var(--bg);
-    font-family:'Sora',system-ui,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
 
   .chrome-top{
     flex:0 0 auto;
     padding:calc(env(safe-area-inset-top,0px) + 18px) 20px 10px;
-    display:flex;align-items:center;gap:8px;
+    display:flex;align-items:center;gap:10px;
   }
+  .brand{
+    font-size:14px;font-weight:700;letter-spacing:-.01em;
+    color:var(--ink);text-decoration:none;
+  }
+  .brand:hover{color:var(--accent);}
   .eyebrow{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:11px;letter-spacing:.16em;
-    color:var(--muted);text-transform:uppercase;
+    font-size:12px;
+    color:var(--muted);
   }
   .dot{
     width:6px;height:6px;border-radius:50%;
     background:var(--accent);
-    box-shadow:0 0 8px 1px rgba(255,255,255,.5);
+    box-shadow:0 0 8px 1px rgba(63,185,80,.55);
     animation:breathe 2.6s ease-in-out infinite;
   }
   @keyframes breathe{
@@ -60,9 +65,8 @@
   .stage-hint{
     position:absolute;left:0;right:0;bottom:12px;
     text-align:center;pointer-events:none;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:11px;letter-spacing:.08em;
-    color:var(--muted);opacity:.75;
+    font-size:12px;
+    color:var(--muted);opacity:.8;
   }
   .replay-btn{
     position:absolute;left:14px;bottom:14px;
@@ -73,12 +77,12 @@
     cursor:pointer;backdrop-filter:blur(6px);
     transition:color .15s ease,border-color .15s ease,transform .15s ease;
   }
-  .replay-btn:hover{color:var(--ink);border-color:var(--muted);}
+  .replay-btn:hover{color:var(--accent);border-color:var(--accent);}
   .replay-btn:active{transform:scale(.92);}
   .fallback{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     padding:24px;text-align:center;color:var(--muted);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    font-size:14px;
   }
 
   .chrome-bottom{
@@ -91,12 +95,11 @@
   }
   .field{display:flex;flex-direction:column;gap:6px;}
   .field-label{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;
+    font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;
   }
   #textInput{
     background:transparent;border:none;border-bottom:1px solid var(--line);
-    color:var(--ink);font-family:'Sora',sans-serif;font-weight:600;
+    color:var(--ink);font-weight:600;
     font-size:16px;padding:4px 2px;min-width:180px;width:clamp(160px,32vw,320px);
     outline:none;transition:border-color .15s ease;
   }
@@ -108,8 +111,7 @@
   }
   .hint{
     margin-left:auto;align-self:center;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:11px;color:var(--muted);opacity:.7;
+    font-size:12px;color:var(--muted);opacity:.75;
   }
 
   @media (max-width:480px){
@@ -118,15 +120,14 @@
     #textInput{width:100%;}
   }
 </style>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="app">
   <div class="chrome-top">
     <span class="dot"></span>
-    <span class="eyebrow">Ripple Type</span>
+    <a class="brand" href="https://davidirving.dev/">David Irving</a>
+    <span class="eyebrow">/ Ripple Type</span>
   </div>
 
   <div class="stage-wrap" id="stageWrap">
@@ -297,11 +298,11 @@
     textCtx.textAlign = 'center';
     textCtx.textBaseline = 'middle';
     while(fontSize > minSize){
-      textCtx.font = '800 ' + fontSize + 'px Sora, sans-serif';
+      textCtx.font = '800 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
       if(textCtx.measureText(text).width <= w * 0.88) break;
       fontSize -= 4;
     }
-    textCtx.font = '800 ' + fontSize + 'px Sora, sans-serif';
+    textCtx.font = '800 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
     textCtx.fillStyle = '#ffffff';
     textCtx.fillText(text, w / 2, h / 2);
 
