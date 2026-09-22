@@ -5,7 +5,7 @@ the title-card treatment in AppleTV+'s *Pluribus* — fine hatched lines inside 
 that bend with a radial displacement wave, and a background dot field whose density rises and
 falls with that same wave, which is what produces the concentric rings.
 
-Live: https://spankersbro.github.io/ripple-type/
+Live: https://davidirving.dev/ripple-type/
 
 ## How it works
 
